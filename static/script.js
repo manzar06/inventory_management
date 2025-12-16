@@ -680,6 +680,34 @@ async function cleanupDuplicates() {
     }
 }
 
+async function clearAllProducts() {
+    if (!confirm('WARNING: This will delete ALL products and transactions from the database. This action cannot be undone. Are you sure you want to continue?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/clear-all-products', {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            // Reload everything to clear filters and product list
+            await loadProducts();
+            await loadBrands();
+            await loadCategories();
+            loadSubcategories();
+        } else {
+            alert('Error: ' + (result.error || 'Failed to clear products'));
+        }
+    } catch (error) {
+        console.error('Error clearing products:', error);
+        alert('Error clearing products');
+    }
+}
+
 function exportCSV() {
     // Create a link element and trigger download
     const link = document.createElement('a');

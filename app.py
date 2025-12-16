@@ -416,6 +416,28 @@ def cleanup_duplicates():
         conn.close()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/clear-all-products', methods=['POST'])
+def clear_all_products():
+    """Clear all products and transactions from database"""
+    conn = get_db_connection()
+    
+    try:
+        # Get count before deletion
+        product_count = conn.execute('SELECT COUNT(*) as count FROM products').fetchone()['count']
+        
+        # Delete all transactions first (due to foreign key constraint)
+        conn.execute('DELETE FROM stock_transactions')
+        
+        # Delete all products
+        conn.execute('DELETE FROM products')
+        
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'message': f'All {product_count} products and transactions cleared'})
+    except Exception as e:
+        conn.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/seed', methods=['POST'])
 def seed_database():
     """Add sample products to database (only if database is empty)"""
