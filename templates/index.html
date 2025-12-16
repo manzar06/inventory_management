@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <i class="fas fa-boxes"></i>
+                <h1>Inventory Management System</h1>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="products">
+                <i class="fas fa-cube"></i> Products
+            </button>
+            <button class="tab-btn" data-tab="stock">
+                <i class="fas fa-warehouse"></i> Stock Management
+            </button>
+            <button class="tab-btn" data-tab="monitoring">
+                <i class="fas fa-chart-line"></i> Monitoring
+            </button>
+            <button class="tab-btn" data-tab="reports">
+                <i class="fas fa-file-alt"></i> Reports
+            </button>
+        </nav>
+
+        <!-- Products Tab -->
+        <div class="tab-content active" id="products-tab">
+            <div class="section-header">
+                <h2><i class="fas fa-cube"></i> Product Management</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="seedDatabase()">
+                        <i class="fas fa-database"></i> Load Sample Products
+                    </button>
+                    <button class="btn btn-secondary" onclick="cleanupDuplicates()" style="background: #f59e0b;">
+                        <i class="fas fa-broom"></i> Remove Duplicates
+                    </button>
+                    <button class="btn btn-primary" onclick="openAddProductModal()">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+            </div>
+
+            <div class="filters-container">
+                <div class="filters-header">
+                    <h3><i class="fas fa-filter"></i> Filters</h3>
+                </div>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label><i class="fas fa-search"></i> Search</label>
+                        <input type="text" id="search-input" placeholder="Search products or brands..." onkeyup="filterProducts()">
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-tag"></i> Brand</label>
+                        <select id="brand-filter" onchange="filterProducts()">
+                            <option value="">All Brands</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-folder"></i> Category</label>
+                        <select id="category-filter" onchange="loadSubcategories(); filterProducts()">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-folder-open"></i> Subcategory</label>
+                        <select id="subcategory-filter" onchange="filterProducts()">
+                            <option value="">All Subcategories</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-secondary btn-sm" onclick="clearFilters()">
+                            <i class="fas fa-times"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="products-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Brand</th>
+                            <th>Category</th>
+                            <th>Subcategory</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-tbody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Stock Management Tab -->
+        <div class="tab-content" id="stock-tab">
+            <div class="section-header">
+                <h2><i class="fas fa-warehouse"></i> Stock In / Stock Out</h2>
+            </div>
+
+            <div class="stock-actions">
+                <div class="stock-form">
+                    <h3><i class="fas fa-arrow-down"></i> Stock In</h3>
+                    <select id="stock-in-product">
+                        <option value="">Select Product</option>
+                    </select>
+                    <input type="number" id="stock-in-quantity" placeholder="Quantity" min="1">
+                    <textarea id="stock-in-notes" placeholder="Notes (optional)"></textarea>
+                    <button class="btn btn-success" onclick="stockIn()">
+                        <i class="fas fa-plus-circle"></i> Add Stock
+                    </button>
+                </div>
+
+                <div class="stock-form">
+                    <h3><i class="fas fa-arrow-up"></i> Stock Out</h3>
+                    <select id="stock-out-product">
+                        <option value="">Select Product</option>
+                    </select>
+                    <input type="number" id="stock-out-quantity" placeholder="Quantity" min="1">
+                    <textarea id="stock-out-notes" placeholder="Notes (optional)"></textarea>
+                    <button class="btn btn-danger" onclick="stockOut()">
+                        <i class="fas fa-minus-circle"></i> Remove Stock
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monitoring Tab -->
+        <div class="tab-content" id="monitoring-tab">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-line"></i> Inventory Monitoring</h2>
+                <button class="btn btn-secondary" id="refresh-alerts-btn" onclick="refreshAlerts(event)">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+
+            <div class="alerts-container">
+                <h3><i class="fas fa-exclamation-triangle"></i> Low Stock Alerts</h3>
+                <div id="alerts-list"></div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div class="tab-content" id="reports-tab">
+            <div class="section-header">
+                <h2><i class="fas fa-file-alt"></i> Reports</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" id="refresh-reports-btn" onclick="loadReports(event)">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn btn-success" onclick="exportCSV()">
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <div class="report-summary">
+                <div class="summary-card">
+                    <i class="fas fa-boxes"></i>
+                    <h3 id="total-products">0</h3>
+                    <p>Total Products</p>
+                </div>
+                <div class="summary-card">
+                    <i class="fas fa-dollar-sign"></i>
+                    <h3 id="total-value">$0.00</h3>
+                    <p>Total Inventory Value</p>
+                </div>
+                <div class="summary-card alert-card">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3 id="low-stock-count">0</h3>
+                    <p>Low Stock Items</p>
+                </div>
+            </div>
+
+            <div class="category-stats">
+                <h3><i class="fas fa-chart-pie"></i> Category Statistics</h3>
+                <table id="category-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Products</th>
+                            <th>Total Quantity</th>
+                            <th>Total Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="category-tbody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="recent-transactions">
+                <h3><i class="fas fa-history"></i> Recent Transactions</h3>
+                <div id="transactions-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div id="add-product-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddProductModal()">&times;</span>
+            <h2><i class="fas fa-plus-circle"></i> Add New Product</h2>
+            <form id="add-product-form">
+                <input type="text" id="product-name" placeholder="Product Name" required>
+                <input type="text" id="product-category" placeholder="Category" required>
+                <input type="number" id="product-price" placeholder="Price" step="0.01" min="0" required>
+                <input type="number" id="product-quantity" placeholder="Initial Quantity" min="0" value="0">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Product
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="edit-product-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditProductModal()">&times;</span>
+            <h2><i class="fas fa-edit"></i> Edit Product</h2>
+            <form id="edit-product-form">
+                <input type="hidden" id="edit-product-id">
+                <input type="text" id="edit-product-name" placeholder="Product Name" required>
+                <input type="text" id="edit-product-brand" placeholder="Brand (optional)">
+                <input type="text" id="edit-product-category" placeholder="Category" required>
+                <input type="text" id="edit-product-subcategory" placeholder="Subcategory (optional)">
+                <input type="number" id="edit-product-price" placeholder="Price" step="0.01" min="0" required>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update Product
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+
